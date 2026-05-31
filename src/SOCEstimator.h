@@ -1,5 +1,14 @@
 #pragma once
+#ifdef ARDUINO
 #include <Arduino.h>
+#else
+#include <cstdint>
+#include <cmath>
+#ifndef constrain
+#define constrain(amt,low,high) ((amt)<(low)?(low):((amt)>(high)?(high):(amt)))
+#endif
+extern "C" uint32_t millis(void);
+#endif
 
 // =====================================================
 // SOCEstimator.h - Combined coulomb counting + OCV correction

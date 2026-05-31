@@ -2,6 +2,16 @@
 #include "SOCEstimator.h"
 #include "../../include/constants.h"
 
+#ifndef ARDUINO
+static uint32_t mock_time_ms = 0;
+extern "C" uint32_t millis(void) {
+    return mock_time_ms;
+}
+void set_mock_time(uint32_t ms) {
+    mock_time_ms = ms;
+}
+#endif
+
 void setUp(void) {
     soc.begin(50.0f);
 }
@@ -125,6 +135,28 @@ void test_charged_Ah_accumulator(void) {
     TEST_ASSERT_FLOAT_WITHIN(0.05, 0.95, soc.getChargedAh());
 }
 
+#ifndef ARDUINO
+void test_ocv_correction_when_idle(void) {
+    soc.begin(10.0f);
+    set_mock_time(0);
+    
+    // First update: should mark as idle
+    soc.update(0.0f, 0.0f, 3.2f, 1.0f);
+    
+    // SOC should still be 10.0 since we just entered idle state
+    TEST_ASSERT_FLOAT_WITHIN(0.01, 10.0, soc.getSOC());
+    
+    // Advance time past 30 mins
+    set_mock_time(30 * 60 * 1000 + 1000);
+    
+    // Update again, this should trigger OCV correction
+    // V_bat = 3.20f corresponds to OCV table SOC = 5.0%
+    // New SOC = 0.7 * 10.0 + 0.3 * 5.0 = 8.5%
+    soc.update(0.0f, 0.0f, 3.2f, 1.0f);
+    TEST_ASSERT_FLOAT_WITHIN(0.01, 8.5, soc.getSOC());
+}
+#endif
+
 int main(int /*argc*/, char** /*argv*/) {
     UNITY_BEGIN();
     RUN_TEST(test_initial_SOC);
@@ -139,5 +171,8 @@ int main(int /*argc*/, char** /*argv*/) {
     RUN_TEST(test_charge_then_discharge_returns_close);
     RUN_TEST(test_net_current_zero);
     RUN_TEST(test_charged_Ah_accumulator);
+#ifndef ARDUINO
+    RUN_TEST(test_ocv_correction_when_idle);
+#endif
     return UNITY_END();
 }
