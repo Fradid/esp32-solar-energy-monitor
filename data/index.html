@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Battery Experiments — ESP32</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <h1>⚡ Battery Experiments</h1>
+  <div class="status">
+    <span class="dot" id="dot-ws"></span>
+    <span id="ws-status">offline</span>
+    <span class="sep">·</span>
+    <span id="uptime">--</span>
+  </div>
+</header>
+
+<main>
+  <!-- Live state -->
+  <section class="card">
+    <h2>Поточний стан</h2>
+    <div class="grid">
+      <div class="metric">
+        <div class="label">SOC</div>
+        <div class="value" id="soc">--</div>
+        <div class="unit">%</div>
+      </div>
+      <div class="metric">
+        <div class="label">U_bat</div>
+        <div class="value" id="vbat">--</div>
+        <div class="unit">В</div>
+      </div>
+      <div class="metric">
+        <div class="label">I заряд</div>
+        <div class="value" id="icharge">--</div>
+        <div class="unit">мА</div>
+      </div>
+      <div class="metric">
+        <div class="label">I розряд</div>
+        <div class="value" id="iload">--</div>
+        <div class="unit">мА</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Experiments -->
+  <section class="card">
+    <h2>Експерименти</h2>
+    <p class="hint">Оберіть експеримент і натисніть «Запустити». Поточний стан буде логуватися
+       у CSV-файл та ThingSpeak.</p>
+
+    <div class="exp-grid">
+      <div class="exp-btn" data-type="1">
+        <div class="exp-id">E1</div>
+        <div class="exp-name">Заряд від USB 5В</div>
+        <div class="exp-desc">Опорний експеримент</div>
+      </div>
+      <div class="exp-btn" data-type="2">
+        <div class="exp-id">E2</div>
+        <div class="exp-name">Заряд від PV (сонячно)</div>
+        <div class="exp-desc">Cloud_cover &lt; 30%</div>
+      </div>
+      <div class="exp-btn" data-type="3">
+        <div class="exp-id">E3</div>
+        <div class="exp-name">Заряд від PV (хмарно)</div>
+        <div class="exp-desc">Cloud_cover &gt; 70%</div>
+      </div>
+      <div class="exp-btn" data-type="4">
+        <div class="exp-id">E4</div>
+        <div class="exp-name">Розряд</div>
+        <div class="exp-desc">На навантаження</div>
+      </div>
+      <div class="exp-btn" data-type="5">
+        <div class="exp-id">E5</div>
+        <div class="exp-name">Верифікація SOC</div>
+        <div class="exp-desc">Повний цикл</div>
+      </div>
+      <div class="exp-btn" data-type="6">
+        <div class="exp-id">E6</div>
+        <div class="exp-name">Автономність</div>
+        <div class="exp-desc">При SOC_min = <input type="number" id="e6-param" value="30" min="10" max="90" step="5"> %</div>
+      </div>
+    </div>
+
+    <div class="exp-controls">
+      <button id="btn-stop" class="btn btn-warn">Зупинити поточний</button>
+    </div>
+
+    <!-- Running experiment status -->
+    <div id="exp-status" class="exp-status hidden">
+      <h3 id="exp-running-name">--</h3>
+      <div class="exp-info">
+        <div><b>Тривалість:</b> <span id="exp-elapsed">--</span> с</div>
+        <div><b>Початковий SOC:</b> <span id="exp-start-soc">--</span> %</div>
+        <div><b>Поточний SOC:</b> <span id="exp-current-soc">--</span> %</div>
+        <div><b>Δ SOC:</b> <span id="exp-delta-soc">--</span> %</div>
+        <div><b>E накопичено:</b> <span id="exp-ein">--</span> Вт·год</div>
+        <div><b>E витрачено:</b> <span id="exp-eout">--</span> Вт·год</div>
+        <div><b>Зразків:</b> <span id="exp-samples">--</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Manual SOC override -->
+  <section class="card">
+    <h2>Калібрування SOC</h2>
+    <p class="hint">Встановіть відоме значення SOC після повного заряду / розряду.</p>
+    <div class="row">
+      <input type="number" id="soc-set" value="100" min="0" max="100" step="1">
+      <button onclick="setSOC()" class="btn">Встановити SOC</button>
+      <button onclick="setSOC(0)" class="btn">Розряджено (0%)</button>
+      <button onclick="setSOC(100)" class="btn">Заряджено (100%)</button>
+    </div>
+  </section>
+
+  <!-- Files -->
+  <section class="card">
+    <h2>Експерт даних</h2>
+    <p class="hint">CSV-файли експериментів, збережені у SPIFFS.</p>
+    <button onclick="refreshFiles()" class="btn">Оновити список</button>
+    <ul id="files-list"></ul>
+  </section>
+
+  <!-- Event log -->
+  <section class="card">
+    <h2>Журнал подій</h2>
+    <button onclick="refreshLog()" class="btn">Оновити</button>
+    <div id="log" class="log"></div>
+  </section>
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>
